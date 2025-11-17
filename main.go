@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"html/template"
 	"io"
@@ -13,8 +14,10 @@ import (
 )
 
 const saveDir = "saved"
+//go:embed index.gohtml
+var content embed.FS
 
-var tmpl = template.Must(template.ParseFiles("index.gohtml"))
+var tmpl = template.Must(template.ParseFS(content, "index.gohtml"))
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -27,7 +30,7 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := tmpl.Execute(w, nil)
+	err := tmpl.ExecuteTemplate(w, "index.gohtml", nil)
 	if err != nil {
 		log.Printf("Template execution error: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
