@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Large POST Tester</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; line-height: 1.6; }
+        form { border: 1px solid #ccc; padding: 1em; border-radius: 8px; }
+        
+        #progress-bar {
+            width: 100%;
+            height: 25px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            display: none; 
+        }
+        #progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background-color: #4CAF50;
+            border-radius: 4px;
+            transition: width 0.2s;
+        }
+
+        #status {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+
+    <h2>File Upload (XHR Progress)</h2>
+
+    <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+        <div>
+            <label for="file">Select file:</label>
+            <input type="file" id="file" name="file" required>
+        </div>
+        <br>
+        <div>
+            <input type="submit" value="Upload">
+        </div>
+    </form>
+
+    <div id="progress-container" style="margin-top: 20px;">
+        <div id="progress-bar">
+            <div id="progress-bar-fill"></div>
+        </div>
+        <div id="progress-text">0%</div>
+    </div>
+
+    <div id="status"></div>
+
+    <script>
+        const form = document.getElementById('upload-form');
+        const fileInput = document.getElementById('file');
+        const progressBar = document.getElementById('progress-bar');
+        const progressBarFill = document.getElementById('progress-bar-fill');
+        const progressText = document.getElementById('progress-text');
+        const statusDiv = document.getElementById('status');
+
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const file = fileInput.files[0];
+            if (!file) {
+                statusDiv.textContent = 'No file selected.';
+                statusDiv.className = 'error';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file); 
+
+            statusDiv.textContent = '';
+            statusDiv.className = '';
+            progressBar.style.display = 'block';
+            progressBarFill.style.width = '0%';
+            progressText.textContent = '0%';
+
+            const xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = Math.round((e.loaded / e.total) * 100);
+                    progressBarFill.style.width = percentComplete + '%';
+                    progressText.textContent = percentComplete + '%';
+                }
+            });
+
+            xhr.addEventListener('load', function() {
+                progressText.textContent = '100% (Complete)';
+                
+                if (xhr.status === 200) {
+                    statusDiv.textContent = 'Success: ' + xhr.responseText;
+                    statusDiv.className = 'success';
+                } else {
+                    statusDiv.textContent = `Error (${xhr.status}): ${xhr.responseText}`;
+                    statusDiv.className = 'error';
+                }
+            });
+
+            xhr.addEventListener('error', function() {
+                statusDiv.textContent = 'An upload error occurred.';
+                statusDiv.className = 'error';
+                progressBar.style.display = 'none';
+            });
+
+            xhr.addEventListener('abort', function() {
+                statusDiv.textContent = 'Upload was aborted.';
+                statusDiv.className = 'error';
+                progressBar.style.display = 'none';
+            });
+
+            xhr.open('POST', '/upload');
+            xhr.send(formData);
+        });
+    </script>
+
+</body>
+</html>
