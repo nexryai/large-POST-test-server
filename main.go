@@ -8,12 +8,8 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
-
-	"github.com/google/uuid"
 )
 
-const saveDir = "saved"
 //go:embed index.gohtml
 var content embed.FS
 
@@ -60,10 +56,8 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Received file: %s (Size: %d bytes)", handler.Filename, handler.Size)
 
-	saveName := uuid.Must(uuid.NewRandom()).String()
-	savePath := filepath.Join(saveDir, filepath.Base(saveName))
-
-	dst, err := os.Create(savePath)
+	// Just simulating saving the file without actually writing it to disk
+	dst, err := os.Create("/dev/null")
 	if err != nil {
 		log.Printf("Failed to create file: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -77,7 +71,7 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Successfully saved file to: %s", savePath)
+	log.Printf("Successfully saved file to: %s", "/dev/null")
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "File '%s' uploaded successfully.", handler.Filename)
@@ -85,16 +79,9 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 
 
 func main() {
-	if err := os.MkdirAll(saveDir, 0755); err != nil {
-		log.Fatalf("Failed to create save directory: %v", err)
-	}
-	log.Printf("Serving files to '%s' directory", saveDir)
-
-
 	http.HandleFunc("/", handleRoot)
 	http.HandleFunc("/upload", handleUpload)
 
-	// サーバー起動
 	port := "8080"
 	log.Printf("Starting server on http://localhost:%s", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
