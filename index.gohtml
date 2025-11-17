@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Large POST Tester</title>
+    <title>File Upload (XHR / Fetch)</title>
     <style>
         body { font-family: sans-serif; margin: 2em; line-height: 1.6; }
         form { border: 1px solid #ccc; padding: 1em; border-radius: 8px; }
@@ -32,9 +32,21 @@
 </head>
 <body>
 
-    <h2>File Upload (XHR Progress)</h2>
+    <h2>File Upload (XHR / Fetch)</h2>
 
     <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+        <div>
+            <strong>Upload Method:</strong>
+            <label>
+                <input type="radio" name="uploadMethod" value="xhr" checked>
+                XHR (with Progress)
+            </label>
+            <label>
+                <input type="radio" name="uploadMethod" value="fetch">
+                Fetch (no Progress)
+            </label>
+        </div>
+        <hr>
         <div>
             <label for="file">Select file:</label>
             <input type="file" id="file" name="file" required>
@@ -75,8 +87,19 @@
             const formData = new FormData();
             formData.append('file', file); 
 
+            const method = document.querySelector('input[name="uploadMethod"]:checked').value;
+
             statusDiv.textContent = '';
             statusDiv.className = '';
+
+            if (method === 'xhr') {
+                uploadWithXHR(formData);
+            } else {
+                uploadWithFetch(formData);
+            }
+        });
+
+        function uploadWithXHR(formData) {
             progressBar.style.display = 'block';
             progressBarFill.style.width = '0%';
             progressText.textContent = '0%';
@@ -117,7 +140,35 @@
 
             xhr.open('POST', '/upload');
             xhr.send(formData);
-        });
+        }
+
+        function uploadWithFetch(formData) {
+            progressBar.style.display = 'none';
+            progressText.textContent = 'Uploading (Fetch)...';
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                return response.text().then(text => {
+                    if (!response.ok) {
+                        throw new Error(`Error (${response.status}): ${text}`);
+                    }
+                    return text;
+                });
+            })
+            .then(successText => {
+                statusDiv.textContent = 'Success: ' + successText;
+                statusDiv.className = 'success';
+                progressText.textContent = 'Complete';
+            })
+            .catch(error => {
+                statusDiv.textContent = error.message;
+                statusDiv.className = 'error';
+                progressText.textContent = 'Failed';
+            });
+        }
     </script>
 
 </body>
